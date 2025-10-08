@@ -3,7 +3,7 @@ import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEdit, FaTrash, FaCar } from "react-icons/fa";
-
+import api from "../../services/api";
 
 export default function ConsultarVehiculo() {
   const [vehiculos, setVehiculos] = useState([]);
@@ -14,8 +14,7 @@ export default function ConsultarVehiculo() {
 
   const obtenerVehiculos = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/vehiculos");
-      const data = await res.json();
+      const { data } = await api.get("/api/vehiculos");
       setVehiculos(data);
     } catch (error) {
       console.error("Error al cargar vehículos:", error);
@@ -48,27 +47,18 @@ export default function ConsultarVehiculo() {
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar"
     });
-  
-    if (confirmacion.isConfirmed) {
-      try {
-        const res = await fetch(`http://localhost:3001/api/vehiculos/${vehiculo.ID_Vehiculo}`, {
-          method: "DELETE"
-        });
-  
-        if (res.ok) {
-          Swal.fire("Eliminado", "El vehículo fue eliminado exitosamente", "success");
-          obtenerVehiculos(); // Refrescar lista
-        } else {
-          const data = await res.json();
-          Swal.fire("No se puede eliminar", data.error, "warning");
-        }
-      } catch (error) {
-        console.error(error);
-        Swal.fire("Error", "Ocurrió un error al eliminar el vehículo", "error");
-      }
+
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/vehiculos/${vehiculo.ID_Vehiculo}`);
+      Swal.fire("Eliminado", "El vehículo fue eliminado exitosamente", "success");
+      obtenerVehiculos();
+    } catch (error) {
+      const msg = error?.response?.data?.error || "Ocurrió un error al eliminar el vehículo";
+      Swal.fire("No se puede eliminar", msg, "warning");
     }
   };
-  
 
   return (
     <SidebarLayout>
@@ -86,11 +76,7 @@ export default function ConsultarVehiculo() {
             />
           </div>
           <div className="col-md-4">
-            <select
-              className="form-select"
-              value={filtroTipo}
-              onChange={(e) => setFiltroTipo(e.target.value)}
-            >
+            <select className="form-select" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
               <option value="">Todos los tipos</option>
               {tiposUnicos.map((tipo) => (
                 <option key={tipo} value={tipo}>{tipo}</option>
@@ -98,11 +84,7 @@ export default function ConsultarVehiculo() {
             </select>
           </div>
           <div className="col-md-4">
-            <select
-              className="form-select"
-              value={filtroAsignacion}
-              onChange={(e) => setFiltroAsignacion(e.target.value)}
-            >
+            <select className="form-select" value={filtroAsignacion} onChange={(e) => setFiltroAsignacion(e.target.value)}>
               <option value="">Todos</option>
               <option value="Disponible">Disponible</option>
               <option value="Asignado">Asignado</option>
@@ -134,49 +116,21 @@ export default function ConsultarVehiculo() {
                 <td>{v.Linea}</td>
                 <td>{v.Modelo}</td>
                 <td>{v.Estatus}</td>
-                <td>
-                  {v.Piloto ? (
-                    <span>{v.Piloto}</span>
-                  ) : (
-                    <span className="text-success fw-bold">Disponible</span>
-                  )}
-                </td>
+                <td>{v.Piloto ? <span>{v.Piloto}</span> : <span className="text-success fw-bold">Disponible</span>}</td>
                 <td>
                   <div className="d-flex w-100 gap-2">
-                    <button
-                      className="btn btn-primary btn-sm flex-fill"
-                      onClick={() => navigate(`/vehiculos/detalle/${v.ID_Vehiculo}`)}
-                    >
-                     <FaEye className="me-1" />
-                      Ver más
+                    <button className="btn btn-primary btn-sm flex-fill" onClick={() => navigate(`/vehiculos/detalle/${v.ID_Vehiculo}`)}>
+                      <FaEye className="me-1" /> Ver más
                     </button>
-                    <button
-                      className="btn btn-success btn-sm flex-fill"
-                      onClick={() => navigate(`/vehiculos/modificar/${v.ID_Vehiculo}`)}
-                    >
-                      <FaEdit className="me-1" />
-                      Editar
+                    <button className="btn btn-success btn-sm flex-fill" onClick={() => navigate(`/vehiculos/modificar/${v.ID_Vehiculo}`)}>
+                      <FaEdit className="me-1" /> Editar
                     </button>
-
-                    <button
-                      className="btn btn-warning btn-sm flex-fill"
-                      onClick={() => navigate(`/vehiculos/kilometraje/${v.ID_Vehiculo}`)}
-                    >
-                      <FaCar className="me-1" />
-                      Kilometraje
+                    <button className="btn btn-warning btn-sm flex-fill" onClick={() => navigate(`/vehiculos/kilometraje/${v.ID_Vehiculo}`)}>
+                      <FaCar className="me-1" /> Kilometraje
                     </button>
-
-                    <button
-                      className="btn btn-danger btn-sm flex-fill"
-                      onClick={() => eliminarVehiculo(v)}
-
-                    >
-                      <FaTrash className="me-1" />
-                      Eliminar
+                    <button className="btn btn-danger btn-sm flex-fill" onClick={() => eliminarVehiculo(v)}>
+                      <FaTrash className="me-1" /> Eliminar
                     </button>
-
-                   
-
                   </div>
                 </td>
               </tr>

@@ -1,9 +1,9 @@
-// src/pages/recorridos/ConsultarRecorrido.js
 import { useEffect, useState } from "react";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import api from "../../services/api";
 
 export default function ConsultarRecorrido() {
   const [recorridos, setRecorridos] = useState([]);
@@ -14,8 +14,7 @@ export default function ConsultarRecorrido() {
 
   const obtenerRecorridos = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/recorridos");
-      const data = await res.json();
+      const { data } = await api.get("/api/recorridos");
       setRecorridos(data);
     } catch (error) {
       console.error("Error al cargar recorridos:", error);
@@ -42,27 +41,19 @@ export default function ConsultarRecorrido() {
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar"
+      cancelButtonText: "Cancelar",
     });
-  
-    if (confirmacion.isConfirmed) {
-      try {
-        const res = await fetch(`http://localhost:3001/api/recorridos/${id}`, {
-          method: "DELETE"
-        });
-  
-        if (res.ok) {
-          Swal.fire("Eliminado", "El recorrido fue eliminado correctamente", "success");
-          obtenerRecorridos(); // vuelve a cargar la tabla
-        } else {
-          Swal.fire("Error", "No se pudo eliminar el recorrido", "error");
-        }
-      } catch (error) {
-        Swal.fire("Error", "Ocurrió un error de red", "error");
-      }
+
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/recorridos/${id}`);
+      Swal.fire("Eliminado", "El recorrido fue eliminado correctamente", "success");
+      obtenerRecorridos();
+    } catch (error) {
+      Swal.fire("Error", "No se pudo eliminar el recorrido", "error");
     }
   };
-  
 
   return (
     <SidebarLayout>
@@ -70,7 +61,7 @@ export default function ConsultarRecorrido() {
         <h2 className="mb-4">Listado de Recorridos</h2>
 
         <div className="row mb-3">
-        <div className="col-md-4">
+          <div className="col-md-4">
             <input
               type="text"
               className="form-control"
@@ -89,7 +80,7 @@ export default function ConsultarRecorrido() {
               onChange={(e) => setFiltroPlaca(e.target.value)}
             />
           </div>
-          
+
           <div className="col-md-4">
             <input
               type="text"

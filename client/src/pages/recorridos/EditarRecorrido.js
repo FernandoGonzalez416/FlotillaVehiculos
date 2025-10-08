@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import { FaArrowLeft } from "react-icons/fa";
+import api from "../../services/api";
 
 export default function EditarRecorrido() {
   const { id } = useParams();
@@ -19,8 +20,7 @@ export default function EditarRecorrido() {
   useEffect(() => {
     const obtenerRecorrido = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/recorridos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/recorridos/${id}`);
         setFormData({
           piloto: data.Piloto,
           vehiculo: data.Vehiculo,
@@ -34,7 +34,6 @@ export default function EditarRecorrido() {
         Swal.fire("Error", "No se pudo cargar el recorrido", "error");
       }
     };
-
     obtenerRecorrido();
   }, [id]);
 
@@ -46,25 +45,16 @@ export default function EditarRecorrido() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:3001/api/recorridos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          punto_a: formData.punto_a,
-          punto_b: formData.punto_b,
-          distancia: formData.distancia,
-          tiempo_aproximado: formData.tiempo_aproximado
-        })
+      await api.put(`/api/recorridos/${id}`, {
+        punto_a: formData.punto_a,
+        punto_b: formData.punto_b,
+        distancia: formData.distancia,
+        tiempo_aproximado: formData.tiempo_aproximado
       });
-
-      if (res.ok) {
-        Swal.fire("Éxito", "Recorrido actualizado correctamente", "success");
-        navigate("/recorridos/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo actualizar el recorrido", "error");
-      }
+      Swal.fire("Éxito", "Recorrido actualizado correctamente", "success");
+      navigate("/recorridos/consultar");
     } catch (error) {
-      Swal.fire("Error", "Error de red", "error");
+      Swal.fire("Error", "No se pudo actualizar el recorrido", "error");
     }
   };
 
@@ -72,10 +62,7 @@ export default function EditarRecorrido() {
     <SidebarLayout>
       <div className="container">
         <h2 className="mb-4">Editar Recorrido</h2>
-        <button
-          className="btn btn-secondary mb-4"
-          onClick={() => navigate("/recorridos/consultar")}
-        >
+        <button className="btn btn-secondary mb-4" onClick={() => navigate("/recorridos/consultar")}>
           <FaArrowLeft className="me-2" /> Volver
         </button>
 

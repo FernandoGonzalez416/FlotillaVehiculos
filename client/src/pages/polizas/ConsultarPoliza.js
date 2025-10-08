@@ -3,8 +3,9 @@ import SidebarLayout from "../../layouts/SidebarLayout";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // Import con variable
+import autoTable from "jspdf-autotable";
 import { FaCheckCircle, FaExclamationTriangle, FaEye, FaEdit, FaTrash, FaFilePdf } from "react-icons/fa";
+import api from "../../services/api";
 
 export default function ConsultarPolizas() {
   const [polizas, setPolizas] = useState([]);
@@ -19,8 +20,7 @@ export default function ConsultarPolizas() {
 
   const obtenerPolizas = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/polizas");
-      const data = await res.json();
+      const { data } = await api.get("/api/polizas");
       setPolizas(data);
     } catch (error) {
       console.error("Error al cargar pólizas:", error);
@@ -29,8 +29,7 @@ export default function ConsultarPolizas() {
 
   const obtenerVehiculosSinPoliza = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/polizas/vehiculos-disponibles");
-      const data = await res.json();
+      const { data } = await api.get("/api/polizas/vehiculos-disponibles");
       setVehiculosSinPoliza(data);
     } catch (error) {
       console.error("Error al cargar vehículos sin póliza:", error);
@@ -54,20 +53,15 @@ export default function ConsultarPolizas() {
       cancelButtonText: "Cancelar"
     });
 
-    if (confirmacion.isConfirmed) {
-      try {
-        const res = await fetch(`http://localhost:3001/api/polizas/${poliza.ID_Poliza}`, { method: "DELETE" });
-        if (res.ok) {
-          Swal.fire("Eliminada", "La póliza fue eliminada exitosamente", "success");
-          obtenerPolizas();
-          obtenerVehiculosSinPoliza();
-        } else {
-          Swal.fire("Error", "No se pudo eliminar la póliza", "error");
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        Swal.fire("Error", "Error al eliminar la póliza", "error");
-      }
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/polizas/${poliza.ID_Poliza}`);
+      Swal.fire("Eliminada", "La póliza fue eliminada exitosamente", "success");
+      await Promise.all([obtenerPolizas(), obtenerVehiculosSinPoliza()]);
+    } catch (error) {
+      console.error("Error:", error);
+      Swal.fire("Error", "Error al eliminar la póliza", "error");
     }
   };
 
@@ -75,70 +69,69 @@ export default function ConsultarPolizas() {
     if (!fechaVencimiento) return { color: "secondary", icon: null };
     const hoy = new Date();
     const vencimiento = new Date(fechaVencimiento);
-    const mesesRestantes = (vencimiento.getFullYear() - hoy.getFullYear()) * 12 + vencimiento.getMonth() - hoy.getMonth();
+    const mesesRestantes =
+      (vencimiento.getFullYear() - hoy.getFullYear()) * 12 +
+      (vencimiento.getMonth() - hoy.getMonth());
     if (mesesRestantes > 4) return { color: "success", icon: <FaCheckCircle /> };
     if (mesesRestantes >= 2) return { color: "warning", icon: <FaExclamationTriangle /> };
     return { color: "danger", icon: <FaExclamationTriangle /> };
   };
 
-  // 🔎 Filtrado
   const polizasFiltradas = polizas.filter((p) =>
     p.Numero_Poliza.toLowerCase().includes(filtro.toLowerCase()) ||
     p.Placa.toLowerCase().includes(filtro.toLowerCase()) ||
     p.Aseguradora.toLowerCase().includes(filtro.toLowerCase())
   );
 
-  // 📄 Generar PDF
-const generarPDF = () => {
-  const doc = new jsPDF();
+  const generarPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Reporte de Pólizas", 105, 20, null, null, "center");
 
-  doc.setFontSize(18);
-  doc.text("Reporte de Pólizas", 105, 20, null, null, "center");
-
-  const fechaActual = new Date().toLocaleDateString();
-  doc.setFontSize(10);
-  doc.text(`Fecha de generación: ${fechaActual}`, 14, 30);
-
-  const columnas = [
-    { header: "ID", dataKey: "id" },
-    { header: "Número", dataKey: "numero" },
-    { header: "Placa", dataKey: "placa" },
-    { header: "Aseguradora", dataKey: "aseguradora" },
-    { header: "Vencimiento", dataKey: "vencimiento" },
-  ];
-  const filas = polizasFiltradas.map(p => ({
-    id: p.ID_Poliza,
-    numero: p.Numero_Poliza,
-    placa: p.Placa,
-    aseguradora: p.Aseguradora,
-    vencimiento: new Date(p.Fecha_Vencimiento).toLocaleDateString(),
-  }));
-
-  doc.autoTable({
-    startY: 40,
-    columns: columnas,
-    body: filas,
-    theme: "grid",
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [0, 123, 255] },
-  });
-
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
+    const fechaActual = new Date().toLocaleDateString();
     doc.setFontSize(10);
-    doc.text(`Página ${i} de ${pageCount}`, 105, 290, null, null, "center");
-  }
+    doc.text(`Fecha de generación: ${fechaActual}`, 14, 30);
 
-  doc.save("reporte_polizas.pdf");
-};
+    const columnas = [
+      { header: "ID", dataKey: "id" },
+      { header: "Número", dataKey: "numero" },
+      { header: "Placa", dataKey: "placa" },
+      { header: "Aseguradora", dataKey: "aseguradora" },
+      { header: "Vencimiento", dataKey: "vencimiento" },
+    ];
+    const filas = polizasFiltradas.map((p) => ({
+      id: p.ID_Poliza,
+      numero: p.Numero_Poliza,
+      placa: p.Placa,
+      aseguradora: p.Aseguradora,
+      vencimiento: new Date(p.Fecha_Vencimiento).toLocaleDateString(),
+    }));
+
+    autoTable(doc, {
+      startY: 40,
+      columns: columnas,
+      body: filas,
+      theme: "grid",
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [0, 123, 255] },
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(`Página ${i} de ${pageCount}`, 105, 290, null, null, "center");
+    }
+
+    doc.save("reporte_polizas.pdf");
+  };
 
   return (
     <SidebarLayout>
       <div className="container">
         <h2 className="mb-4 text-success">Pólizas</h2>
 
-        {/* 🔍 Filtro */}
+        {/* Filtro */}
         <div className="mb-3">
           <input
             type="text"
@@ -149,7 +142,7 @@ const generarPDF = () => {
           />
         </div>
 
-        {/* 📄 Botón Generar PDF */}
+        {/* Botón Generar PDF */}
         <button className="btn btn-danger mb-3" onClick={generarPDF}>
           <FaFilePdf className="me-2" /> Generar Reporte PDF
         </button>

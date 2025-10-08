@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import SidebarLayout from "../../layouts/SidebarLayout";
+import api from "../../services/api";
 
 export default function RegistrarKilometraje() {
   const { id } = useParams();
@@ -13,44 +14,30 @@ export default function RegistrarKilometraje() {
   useEffect(() => {
     const fetchVehiculo = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/vehiculos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/vehiculos/${id}`);
         setVehiculo(data);
-      } catch (error) {
+      } catch {
         Swal.fire("Error", "No se pudo cargar el vehículo", "error");
       }
     };
-
     fetchVehiculo();
   }, [id]);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (nuevoKm <= vehiculo.Kilometraje) {
       return Swal.fire("Error", "El nuevo kilometraje debe ser mayor al actual", "error");
     }
-
     try {
-      const res = await fetch("http://localhost:3001/api/vehiculos/kilometraje", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_vehiculo: vehiculo.ID_Vehiculo,
-          kilometraje_nuevo: parseInt(nuevoKm)
-        })
+      const { data } = await api.post("/api/vehiculos/kilometraje", {
+        id_vehiculo: vehiculo.ID_Vehiculo,
+        kilometraje_nuevo: parseInt(nuevoKm, 10)
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        Swal.fire("Éxito", `Kilometraje actualizado correctamente.\nRecorrido: ${data.recorrido} km`, "success").then(() => {
-          navigate("/vehiculos/consultar");
-        });
-      } else {
-        Swal.fire("Error", data.error || "No se pudo registrar", "error");
-      }
+      Swal.fire("Éxito", `Kilometraje actualizado correctamente.\nRecorrido: ${data.recorrido} km`, "success")
+        .then(() => navigate("/vehiculos/consultar"));
     } catch (error) {
-      Swal.fire("Error", "Error de red", "error");
+      const msg = error?.response?.data?.error || "No se pudo registrar";
+      Swal.fire("Error", msg, "error");
     }
   };
 

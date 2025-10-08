@@ -3,44 +3,61 @@ import SidebarLayout from "../../layouts/SidebarLayout";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function ConsultarMantenimiento() {
   const [mantenimientos, setMantenimientos] = useState([]);
-  const [filtros, setFiltros] = useState({
-    placa: "",
-    tipo: "",
-    taller: ""
-  });
+  const [filtros, setFiltros] = useState({ placa: "", tipo: "", taller: "" });
   const navigate = useNavigate();
 
   useEffect(() => {
     const obtenerMantenimientos = async () => {
       try {
-        const res = await fetch("http://localhost:3001/api/mantenimientos");
-        const data = await res.json();
+        const { data } = await api.get("/api/mantenimientos");
         setMantenimientos(data);
       } catch (error) {
-        console.error("Error al cargar mantenimientos:", error);
         Swal.fire("Error", "No se pudo obtener la lista de mantenimientos", "error");
       }
     };
-
     obtenerMantenimientos();
   }, []);
 
   const handleChangeFiltro = (e) => {
     const { name, value } = e.target;
-    setFiltros(prev => ({ ...prev, [name]: value.toLowerCase() }));
+    setFiltros((prev) => ({ ...prev, [name]: value.toLowerCase() }));
   };
 
-  const filtrarMantenimientos = () => {
-    return mantenimientos.filter((m) =>
-      (filtros.placa === "" || m.Vehiculo.toLowerCase().includes(filtros.placa)) &&
-      (filtros.tipo === "" || m.Tipo_Mantenimiento.toLowerCase() === filtros.tipo) &&
-      (filtros.taller === "" || m.Nombre_Taller.toLowerCase().includes(filtros.taller))
-    );
+  const filtrados = mantenimientos.filter(
+    (m) =>
+      (filtros.placa === "" ||
+        m.Vehiculo.toLowerCase().includes(filtros.placa)) &&
+      (filtros.tipo === "" ||
+        m.Tipo_Mantenimiento.toLowerCase() === filtros.tipo) &&
+      (filtros.taller === "" ||
+        m.Nombre_Taller.toLowerCase().includes(filtros.taller))
+  );
+
+  const eliminar = async (id) => {
+    const confirm = await Swal.fire({
+      title: "¿Está seguro?",
+      text: "Esta acción eliminará el mantenimiento.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/mantenimientos/${id}`);
+      setMantenimientos((prev) =>
+        prev.filter((m) => m.ID_Mantenimiento !== id)
+      );
+      Swal.fire("Eliminado", "Mantenimiento eliminado", "success");
+    } catch {
+      Swal.fire("Error", "No se pudo eliminar", "error");
+    }
   };
-  
 
   return (
     <SidebarLayout>
@@ -67,9 +84,9 @@ export default function ConsultarMantenimiento() {
               onChange={handleChangeFiltro}
             >
               <option value="">Todos los tipos</option>
-              <option value="Correctivo">Correctivo</option>
-              <option value="Preventivo">Preventivo</option>
-              <option value="Otro">Otro</option>
+              <option value="correctivo">Correctivo</option>
+              <option value="preventivo">Preventivo</option>
+              <option value="otro">Otro</option>
             </select>
           </div>
           <div className="col-md-4 mb-2">
@@ -99,7 +116,7 @@ export default function ConsultarMantenimiento() {
               </tr>
             </thead>
             <tbody>
-              {filtrarMantenimientos().map((m) => (
+              {filtrados.map((m) => (
                 <tr key={m.ID_Mantenimiento}>
                   <td>{m.ID_Mantenimiento}</td>
                   <td>{m.Vehiculo}</td>
@@ -108,62 +125,38 @@ export default function ConsultarMantenimiento() {
                   <td>{m.Nombre_Taller}</td>
                   <td>{new Date(m.Fecha).toLocaleDateString("es-GT")}</td>
                   <td className="text-center">
-                    <div className="d-flex w-100 gap-2">
-                        <button
+                    <div className="d-flex gap-2">
+                      <button
                         className="btn btn-sm btn-primary flex-fill"
-                        onClick={() => navigate(`/mantenimientos/detallar/${m.ID_Mantenimiento}`)}
-                        >
-                        <FaEye ClassName="me-1" />
-                         Ver mas
-                        </button>
-                        <button
+                        onClick={() =>
+                          navigate(`/mantenimientos/detallar/${m.ID_Mantenimiento}`)
+                        }
+                      >
+                        <FaEye className="me-1" /> Ver más
+                      </button>
+                      <button
                         className="btn btn-sm btn-success flex-fill"
-                        onClick={() => navigate(`/mantenimientos/modificar/${m.ID_Mantenimiento}`)}
-                        >
-                        <FaEdit ClassName="me-1" />
-                         Editar
-                        </button>
-                        <button
+                        onClick={() =>
+                          navigate(`/mantenimientos/modificar/${m.ID_Mantenimiento}`)
+                        }
+                      >
+                        <FaEdit className="me-1" /> Editar
+                      </button>
+                      <button
                         className="btn btn-sm btn-danger flex-fill"
-                        onClick={() => {
-                            Swal.fire({
-                            title: "¿Está seguro?",
-                            text: "Esta acción eliminará el mantenimiento.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonText: "Sí, eliminar",
-                            cancelButtonText: "Cancelar"
-                            }).then(async (result) => {
-                            if (result.isConfirmed) {
-                                try {
-                                const res = await fetch(`http://localhost:3001/api/mantenimientos/${m.ID_Mantenimiento}`, {
-                                    method: "DELETE"
-                                });
-                                if (res.ok) {
-                                    Swal.fire("Eliminado", "Mantenimiento eliminado", "success");
-                                    setMantenimientos(prev =>
-                                    prev.filter(mant => mant.ID_Mantenimiento !== m.ID_Mantenimiento)
-                                    );
-                                } else {
-                                    Swal.fire("Error", "No se pudo eliminar", "error");
-                                }
-                                } catch (error) {
-                                Swal.fire("Error", "Error al eliminar", "error");
-                                }
-                            }
-                            });
-                        }}
-                        >
-                        <FaTrash ClassName="me-1"/>
-                         Eliminar
-                        </button>
+                        onClick={() => eliminar(m.ID_Mantenimiento)}
+                      >
+                        <FaTrash className="me-1" /> Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {filtrarMantenimientos().length === 0 && (
+              {filtrados.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center">No se encontraron resultados.</td>
+                  <td colSpan="7" className="text-center">
+                    No se encontraron resultados.
+                  </td>
                 </tr>
               )}
             </tbody>

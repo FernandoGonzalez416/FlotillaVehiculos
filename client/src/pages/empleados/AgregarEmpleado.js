@@ -1,7 +1,8 @@
 import { useState } from "react";
 import SidebarLayout from "../../layouts/SidebarLayout";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function AgregarEmpleado() {
   const navigate = useNavigate();
@@ -25,39 +26,26 @@ export default function AgregarEmpleado() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Aquí luego llamaremos a la API para insertar el empleado
     try {
-        const response = await fetch("http://localhost:3001/api/empleados/agregar", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(formData),
-          });
-          
-          if (response.ok) {
-            Swal.fire("Empleado agregado", "El registro fue exitoso", "success");
-            setFormData({
-              nombres: "",
-              apellidos: "",
-              dpi: "",
-              telefono: "",
-              direccion: "",
-              email: "",
-              fecha_nacimiento: "",
-              fecha_contratacion: "",
-              salario: "",
-              id_rol: ""
-            });
-            navigate("/empleados/consultar");
-          } else {
-            const errorData = await response.json();
-            Swal.fire("Error", errorData.error || "No se pudo agregar el empleado", "error");
-          }
-          
+      await api.post("/api/empleados/agregar", formData);
+      Swal.fire("Empleado agregado", "El registro fue exitoso", "success");
+      setFormData({
+        nombres: "",
+        apellidos: "",
+        dpi: "",
+        telefono: "",
+        direccion: "",
+        email: "",
+        fecha_nacimiento: "",
+        fecha_contratacion: "",
+        salario: "",
+        id_rol: ""
+      });
+      navigate("/empleados/consultar");
     } catch (error) {
-      Swal.fire("Error", "Hubo un problema al guardar el empleado", "error");
+      const msg =
+        error?.response?.data?.error || "No se pudo agregar el empleado";
+      Swal.fire("Error", msg, "error");
     }
   };
 
@@ -78,7 +66,6 @@ export default function AgregarEmpleado() {
                 required
               />
             </div>
-
             <div className="col-md-6 mb-3">
               <label className="form-label">Apellidos *</label>
               <input
@@ -90,7 +77,6 @@ export default function AgregarEmpleado() {
                 required
               />
             </div>
-
             <div className="col-md-6 mb-3">
               <label className="form-label">DPI *</label>
               <input
@@ -102,7 +88,6 @@ export default function AgregarEmpleado() {
                 required
               />
             </div>
-
             <div className="col-md-6 mb-3">
               <label className="form-label">Teléfono</label>
               <input
@@ -113,7 +98,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               />
             </div>
-
             <div className="col-12 mb-3">
               <label className="form-label">Dirección</label>
               <textarea
@@ -123,7 +107,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               ></textarea>
             </div>
-
             <div className="col-md-6 mb-3">
               <label className="form-label">Email</label>
               <input
@@ -134,7 +117,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               />
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Fecha de Nacimiento</label>
               <input
@@ -145,7 +127,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               />
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Fecha de Contratación</label>
               <input
@@ -156,7 +137,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               />
             </div>
-
             <div className="col-md-4 mb-3">
               <label className="form-label">Salario</label>
               <input
@@ -168,7 +148,6 @@ export default function AgregarEmpleado() {
                 onChange={handleChange}
               />
             </div>
-
             <div className="col-md-8 mb-3">
               <label className="form-label">Rol *</label>
               <select
@@ -187,10 +166,7 @@ export default function AgregarEmpleado() {
               </select>
             </div>
           </div>
-
-          <button type="submit" className="btn btn-primary">
-            Guardar Empleado
-          </button>
+          <button type="submit" className="btn btn-primary">Guardar Empleado</button>
         </form>
       </div>
     </SidebarLayout>

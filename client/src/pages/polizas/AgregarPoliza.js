@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
 
 export default function AgregarPoliza() {
   const navigate = useNavigate();
@@ -18,10 +19,9 @@ export default function AgregarPoliza() {
 
   const obtenerVehiculosSinPoliza = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/polizas/vehiculos-disponibles");
-      const data = await res.json();
+      const { data } = await api.get("/api/polizas/vehiculos-disponibles");
       setVehiculosDisponibles(data);
-  
+
       if (data.length === 0) {
         Swal.fire({
           icon: "success",
@@ -35,7 +35,6 @@ export default function AgregarPoliza() {
       Swal.fire("Error", "No se pudieron cargar los vehículos disponibles", "error");
     }
   };
-  
 
   useEffect(() => {
     obtenerVehiculosSinPoliza();
@@ -55,30 +54,20 @@ export default function AgregarPoliza() {
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/polizas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+      await api.post("/api/polizas", formData);
+      Swal.fire("Registrado", "La póliza fue guardada correctamente", "success");
+      setFormData({
+        id_vehiculo: "",
+        numero_poliza: "",
+        aseguradora: "",
+        monto: "",
+        fecha_emision: "",
+        fecha_vencimiento: ""
       });
-
-      if (res.ok) {
-        Swal.fire("Registrado", "La póliza fue guardada correctamente", "success");
-        setFormData({
-          id_vehiculo: "",
-          numero_poliza: "",
-          aseguradora: "",
-          monto: "",
-          fecha_emision: "",
-          fecha_vencimiento: ""
-        });
-        obtenerVehiculosSinPoliza();
-        navigate("/polizas/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo guardar la póliza", "error");
-      }
+      obtenerVehiculosSinPoliza();
+      navigate("/polizas/consultar");
     } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "Ocurrió un error de red", "error");
+      Swal.fire("Error", "No se pudo guardar la póliza", "error");
     }
   };
 

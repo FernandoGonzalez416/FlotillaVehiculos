@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import { FaArrowLeft } from "react-icons/fa";
+import api from "../../services/api";
 
 export default function DetalleRecorrido() {
   const { id } = useParams();
@@ -12,15 +13,13 @@ export default function DetalleRecorrido() {
   useEffect(() => {
     const obtenerRecorrido = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/recorridos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/recorridos/${id}`);
         setRecorrido(data);
       } catch (error) {
         console.error("Error al obtener recorrido:", error);
         Swal.fire("Error", "No se pudo obtener el recorrido", "error");
       }
     };
-
     obtenerRecorrido();
   }, [id]);
 
@@ -51,74 +50,39 @@ export default function DetalleRecorrido() {
           <div className="row">
             <div className="col-md-6 mb-3">
               <label className="form-label">Piloto</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Piloto}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Piloto} readOnly />
             </div>
 
             <div className="col-md-6 mb-3">
               <label className="form-label">Vehículo</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Vehiculo}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Vehiculo} readOnly />
             </div>
 
             <div className="col-md-6 mb-3">
               <label className="form-label">Punto A (Origen)</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Punto_A}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Punto_A} readOnly />
             </div>
 
             <div className="col-md-6 mb-3">
               <label className="form-label">Punto B (Destino)</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Punto_B}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Punto_B} readOnly />
             </div>
 
             <div className="col-md-6 mb-3">
               <label className="form-label">Distancia en Kilómetros</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Distancia}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Distancia} readOnly />
             </div>
 
             <div className="col-md-6 mb-3">
               <label className="form-label">Tiempo Aproximado</label>
-              <input
-                type="text"
-                className="form-control"
-                value={recorrido.Tiempo_Aproximado}
-                readOnly
-              />
+              <input type="text" className="form-control" value={recorrido.Tiempo_Aproximado} readOnly />
             </div>
           </div>
 
           {/* ALERTA DE VIÁTICOS */}
           <div className="row">
             <div className="col-12">
-              <div
-                className={`alert ${
-                  aplicaViatico ? "alert-success" : "alert-danger"
-                }`}
-                role="alert"
-              >
+              <div className={`alert ${aplicaViatico ? "alert-success" : "alert-danger"}`} role="alert">
                 {aplicaViatico
                   ? "Sí aplica a viáticos por comida por ser un recorrido mayor a 8 horas"
                   : "No aplica a viáticos por comida por ser un recorrido menor a 8 horas"}

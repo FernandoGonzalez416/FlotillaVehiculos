@@ -3,7 +3,7 @@ import Swal from "sweetalert2";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
-
+import api from "../../services/api";
 
 export default function ConsultarEmpleado() {
   const [empleados, setEmpleados] = useState([]);
@@ -13,8 +13,7 @@ export default function ConsultarEmpleado() {
 
   const obtenerEmpleados = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/empleados");
-      const data = await res.json();
+      const { data } = await api.get("/api/empleados");
       setEmpleados(data);
     } catch (error) {
       console.error("Error al cargar empleados:", error);
@@ -34,34 +33,26 @@ export default function ConsultarEmpleado() {
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
     });
-  
+
     if (confirmacion.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3001/api/empleados/${empleado.ID_Empleado}`, {
-          method: "DELETE",
-        });
-  
-        if (res.ok) {
-          Swal.fire("Eliminado", "El empleado fue eliminado", "success");
-          obtenerEmpleados(); // recarga la lista
-        } else {
-          Swal.fire("Error", "No se pudo eliminar el empleado", "error");
-        }
+        await api.delete(`/api/empleados/${empleado.ID_Empleado}`);
+        Swal.fire("Eliminado", "El empleado fue eliminado", "success");
+        obtenerEmpleados();
       } catch (error) {
-        Swal.fire("Error", "Error de red o servidor", "error");
+        Swal.fire("Error", "No se pudo eliminar el empleado", "error");
       }
     }
   };
-  
 
-  const empleadosFiltrados = empleados.filter(emp => {
+  const empleadosFiltrados = empleados.filter((emp) => {
     const nombreCompleto = `${emp.Nombres} ${emp.Apellidos}`.toLowerCase();
     const nombreCoincide = nombreCompleto.includes(filtroNombre.toLowerCase());
     const rolCoincide = filtroRol ? emp.Rol === filtroRol : true;
     return nombreCoincide && rolCoincide;
   });
 
-  const rolesUnicos = [...new Set(empleados.map(e => e.Rol).filter(Boolean))];
+  const rolesUnicos = [...new Set(empleados.map((e) => e.Rol).filter(Boolean))];
 
   return (
     <SidebarLayout>
@@ -114,29 +105,26 @@ export default function ConsultarEmpleado() {
                 <td>{emp.Telefono}</td>
                 <td>{emp.Email}</td>
                 <td>
-                    <div className="d-flex w-100 gap-2">
-                        <button
-                        className="btn btn-primary btn-sm flex-fill"
-                        onClick={() => navigate(`/empleados/detalle/${emp.ID_Empleado}`)}
-                        >
-                        <FaEye className="me-1" />
-                        Ver más
-                        </button>
-                        <button
-                        className="btn btn-success btn-sm flex-fill"
-                        onClick={() => navigate(`/empleados/modificar/${emp.ID_Empleado}`)}
-                        >
-                        <FaEdit className="me-1" />
-                        Editar
-                        </button>
-                        <button
-                        className="btn btn-danger btn-sm flex-fill"
-                        onClick={() => eliminarEmpleado(emp)}
-                        >
-                        <FaTrash className="me-1" />
-                        Eliminar
-                        </button>
-                    </div>
+                  <div className="d-flex w-100 gap-2">
+                    <button
+                      className="btn btn-primary btn-sm flex-fill"
+                      onClick={() => navigate(`/empleados/detalle/${emp.ID_Empleado}`)}
+                    >
+                      <FaEye className="me-1" /> Ver más
+                    </button>
+                    <button
+                      className="btn btn-success btn-sm flex-fill"
+                      onClick={() => navigate(`/empleados/modificar/${emp.ID_Empleado}`)}
+                    >
+                      <FaEdit className="me-1" /> Editar
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm flex-fill"
+                      onClick={() => eliminarEmpleado(emp)}
+                    >
+                      <FaTrash className="me-1" /> Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

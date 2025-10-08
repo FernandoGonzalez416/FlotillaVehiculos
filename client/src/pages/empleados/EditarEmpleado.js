@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function EditarEmpleado() {
   const { id } = useParams();
@@ -23,9 +24,7 @@ export default function EditarEmpleado() {
   useEffect(() => {
     const obtenerEmpleado = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/empleados/${id}`);
-        const data = await res.json();
-
+        const { data } = await api.get(`/api/empleados/${id}`);
         setFormData({
           nombres: data.Nombres,
           apellidos: data.Apellidos,
@@ -53,25 +52,12 @@ export default function EditarEmpleado() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await fetch(`http://localhost:3001/api/empleados/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        Swal.fire("Actualizado", "Empleado actualizado correctamente", "success");
-        navigate("/empleados/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo actualizar el empleado", "error");
-      }
+      await api.put(`/api/empleados/${id}`, formData);
+      Swal.fire("Actualizado", "Empleado actualizado correctamente", "success");
+      navigate("/empleados/consultar");
     } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "Hubo un problema de red", "error");
+      Swal.fire("Error", "No se pudo actualizar el empleado", "error");
     }
   };
 
@@ -136,9 +122,7 @@ export default function EditarEmpleado() {
               </select>
             </div>
           </div>
-          <button type="submit" className="btn btn-primary">
-            Guardar Cambios
-          </button>
+          <button type="submit" className="btn btn-primary">Guardar Cambios</button>
         </form>
       </div>
     </SidebarLayout>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function EditarVehiculo() {
   const { id } = useParams();
@@ -11,11 +12,9 @@ export default function EditarVehiculo() {
   useEffect(() => {
     const obtenerVehiculo = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/vehiculos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/vehiculos/${id}`);
         setFormData(data);
       } catch (error) {
-        console.error("Error al obtener vehículo:", error);
         Swal.fire("Error", "No se pudo cargar la información del vehículo", "error");
       }
     };
@@ -30,23 +29,11 @@ export default function EditarVehiculo() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:3001/api/vehiculos/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        Swal.fire("Vehículo actualizado", "Los datos fueron guardados correctamente", "success");
-        navigate("/vehiculos/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo actualizar el vehículo", "error");
-      }
+      await api.put(`/api/vehiculos/${id}`, formData);
+      Swal.fire("Vehículo actualizado", "Los datos fueron guardados correctamente", "success");
+      navigate("/vehiculos/consultar");
     } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "Hubo un error de red", "error");
+      Swal.fire("Error", "No se pudo actualizar el vehículo", "error");
     }
   };
 
@@ -159,13 +146,17 @@ export default function EditarVehiculo() {
 
             <div className="col-md-4 mb-3">
               <label className="form-label">Fecha Impresión Tarjeta</label>
-              <input type="date" className="form-control" name="Impresion_Tarjeta_Circulacion" value={formData.Impresion_Tarjeta_Circulacion?.split("T")[0]} onChange={handleChange} />
+              <input
+                type="date"
+                className="form-control"
+                name="Impresion_Tarjeta_Circulacion"
+                value={formData.Impresion_Tarjeta_Circulacion?.split("T")[0]}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary">
-            Guardar Cambios
-          </button>
+          <button type="submit" className="btn btn-primary">Guardar Cambios</button>
         </form>
       </div>
     </SidebarLayout>

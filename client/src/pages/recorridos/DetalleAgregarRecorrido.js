@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function DetalleAgregarRecorrido() {
   const { idAsignacion } = useParams();
@@ -17,48 +18,33 @@ export default function DetalleAgregarRecorrido() {
   useEffect(() => {
     const obtenerAsignacion = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/asignacion/${idAsignacion}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/asignacion/${idAsignacion}`);
         setAsignacion(data);
       } catch (error) {
         console.error("Error al cargar asignación:", error);
         Swal.fire("Error", "No se pudo obtener la asignación", "error");
       }
     };
-
     obtenerAsignacion();
   }, [idAsignacion]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await fetch("http://localhost:3001/api/recorridos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_piloto: asignacion.ID_Empleado,
-          id_vehiculo: asignacion.ID_Vehiculo,
-          ...formData
-        })
+      await api.post("/api/recorridos", {
+        id_piloto: asignacion.ID_Empleado,
+        id_vehiculo: asignacion.ID_Vehiculo,
+        ...formData,
       });
-
-      if (res.ok) {
-        Swal.fire("Éxito", "Recorrido registrado correctamente", "success");
-        navigate("/recorridos/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo guardar el recorrido", "error");
-      }
+      Swal.fire("Éxito", "Recorrido registrado correctamente", "success");
+      navigate("/recorridos/consultar");
     } catch (error) {
-      Swal.fire("Error", "Error de red al guardar recorrido", "error");
+      Swal.fire("Error", "No se pudo guardar el recorrido", "error");
     }
   };
 

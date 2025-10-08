@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import { FaArrowLeft } from "react-icons/fa";
 import { FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from "react-icons/fa";
-
+import api from "../../services/api";
 
 export default function DetallePoliza() {
   const { id } = useParams();
@@ -13,14 +13,12 @@ export default function DetallePoliza() {
   useEffect(() => {
     const obtenerPoliza = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/polizas/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/polizas/${id}`);
         setPoliza(data);
       } catch (error) {
         console.error("Error al obtener póliza:", error);
       }
     };
-
     obtenerPoliza();
   }, [id]);
 
@@ -32,13 +30,13 @@ export default function DetallePoliza() {
 
   const calcularAlertaVencimiento = (fechaVencimiento) => {
     if (!fechaVencimiento) return null;
-  
+
     const hoy = new Date();
     const vencimiento = new Date(fechaVencimiento);
     const diferenciaMs = vencimiento - hoy;
     const dias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
-    const meses = diferenciaMs / (1000 * 60 * 60 * 24 * 30.44); // Aprox
-  
+    const meses = diferenciaMs / (1000 * 60 * 60 * 24 * 30.44);
+
     if (dias === 0) {
       return {
         tipo: "danger",
@@ -46,7 +44,7 @@ export default function DetallePoliza() {
         icono: <FaTimesCircle className="me-2" />
       };
     }
-  
+
     if (dias < 0) {
       return {
         tipo: "danger",
@@ -54,7 +52,7 @@ export default function DetallePoliza() {
         icono: <FaTimesCircle className="me-2" />
       };
     }
-  
+
     if (meses > 4) {
       return {
         tipo: "success",
@@ -75,16 +73,21 @@ export default function DetallePoliza() {
       };
     }
   };
-  
-  
 
-  if (!poliza) return <SidebarLayout><div className="container">Cargando...</div></SidebarLayout>;
+  if (!poliza)
+    return (
+      <SidebarLayout>
+        <div className="container">Cargando...</div>
+      </SidebarLayout>
+    );
 
   return (
     <SidebarLayout>
       <div className="container">
         <h2 className="mb-4">Detalle de la Póliza</h2>
-        <button className="btn btn-secondary mb-4" onClick={() => navigate("/polizas/consultar")}> <FaArrowLeft className="me-2" /> Volver </button>
+        <button className="btn btn-secondary mb-4" onClick={() => navigate("/polizas/consultar")}>
+          <FaArrowLeft className="me-2" /> Volver
+        </button>
 
         <form>
           <div className="row">
@@ -110,7 +113,12 @@ export default function DetallePoliza() {
 
             <div className="col-md-4 mb-3">
               <label className="form-label">Monto</label>
-              <input type="text" className="form-control" value={`Q${parseFloat(poliza.Monto || 0).toFixed(2)}`} readOnly />
+              <input
+                type="text"
+                className="form-control"
+                value={`Q${parseFloat(poliza.Monto || 0).toFixed(2)}`}
+                readOnly
+              />
             </div>
 
             <div className="col-md-4 mb-3">
@@ -122,23 +130,18 @@ export default function DetallePoliza() {
               <label className="form-label">Fecha de Vencimiento</label>
               <input type="text" className="form-control" value={formatearFecha(poliza.Fecha_Vencimiento)} readOnly />
             </div>
-
-            
           </div>
         </form>
 
-        {poliza.Fecha_Vencimiento && (
-        (() => {
-            const alerta = calcularAlertaVencimiento(poliza.Fecha_Vencimiento);
-            return (
+        {poliza.Fecha_Vencimiento && (() => {
+          const alerta = calcularAlertaVencimiento(poliza.Fecha_Vencimiento);
+          return (
             <div className={`alert alert-${alerta.tipo} d-flex align-items-center`}>
-                {alerta.icono}
-                <div>{alerta.mensaje}</div>
+              {alerta.icono}
+              <div>{alerta.mensaje}</div>
             </div>
-            );
-        })()
-        )}
-
+          );
+        })()}
       </div>
     </SidebarLayout>
   );

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import { FaArrowLeft } from "react-icons/fa";
+import api from "../../services/api";
 
 export default function DetalleMantenimiento() {
   const { id } = useParams();
@@ -10,18 +11,15 @@ export default function DetalleMantenimiento() {
   const [mantenimiento, setMantenimiento] = useState(null);
 
   useEffect(() => {
-    const obtenerMantenimiento = async () => {
+    const obtener = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/mantenimientos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/mantenimientos/${id}`);
         setMantenimiento(data);
-      } catch (error) {
-        console.error("Error al obtener el mantenimiento:", error);
+      } catch {
         Swal.fire("Error", "No se pudo cargar el mantenimiento", "error");
       }
     };
-
-    obtenerMantenimiento();
+    obtener();
   }, [id]);
 
   if (!mantenimiento) {
@@ -36,13 +34,11 @@ export default function DetalleMantenimiento() {
     <SidebarLayout>
       <div className="container">
         <h2 className="mb-4">Detalle del Mantenimiento</h2>
-
         <button
           className="btn btn-secondary mb-4"
           onClick={() => navigate("/mantenimientos/consultar")}
         >
-          <FaArrowLeft className="me-2" />
-          Volver
+          <FaArrowLeft className="me-2" /> Volver
         </button>
 
         <form>
@@ -61,8 +57,6 @@ export default function DetalleMantenimiento() {
               <label className="form-label">Fecha</label>
               <input type="date" className="form-control" value={mantenimiento.Fecha.split("T")[0]} readOnly />
             </div>
-
-            
 
             <div className="col-8 mb-3">
               <label className="form-label">Título del Mantenimiento</label>
@@ -85,31 +79,16 @@ export default function DetalleMantenimiento() {
             </div>
             <div className="col-md-3 mb-3">
               <label className="form-label">Frecuencia Servicio (km)</label>
-              <input
-                type="text"
-                className="form-control"
-                value={mantenimiento.Frecuencia_Servicio || ""}
-                readOnly
-              />
+              <input type="text" className="form-control" value={mantenimiento.Frecuencia_Servicio || ""} readOnly />
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Próximo Servicio (km)</label>
-              <input
-                type="text"
-                className="form-control"
-                value={mantenimiento.Kilometraje_Proximo_Servicio || ""}
-                readOnly
-              />
+              <input type="text" className="form-control" value={mantenimiento.Kilometraje_Proximo_Servicio || ""} readOnly />
             </div>
-
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Costo</label>
               <input type="text" className="form-control" value={mantenimiento.Costo} readOnly />
             </div>
-
-
           </div>
         </form>
       </div>

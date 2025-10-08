@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import { FaArrowLeft } from "react-icons/fa";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function DetalleVehiculo() {
   const { id } = useParams();
@@ -21,26 +22,22 @@ export default function DetalleVehiculo() {
   useEffect(() => {
     const obtenerVehiculo = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/vehiculos/${id}`);
-        const data = await res.json();
+        const { data } = await api.get(`/api/vehiculos/${id}`);
         setVehiculo(data);
 
         const anioTarjeta = new Date(data.Impresion_Tarjeta_Circulacion).getFullYear();
         const anioActual = new Date().getFullYear();
-
         if (anioTarjeta < anioActual) {
           Swal.fire({
             icon: "warning",
             title: "Impuesto de Circulación Pendiente",
-            text: "Este vehículo no tiene pagado el impuesto de circulación del año actual y tambien debe renovar la tarjeta de circulación-",
+            text: "Este vehículo no tiene pagado el impuesto de circulación del año actual y también debe renovar la tarjeta de circulación.",
           });
         }
-
-      } catch (error) {
-        console.error("Error al obtener vehículo:", error);
+      } catch {
+        // noop
       }
     };
-
     obtenerVehiculo();
   }, [id]);
 
@@ -49,25 +46,12 @@ export default function DetalleVehiculo() {
   let alerta = null;
   if (vehiculo.Kilometraje_Proximo_Servicio !== null) {
     const diferencia = vehiculo.Kilometraje_Proximo_Servicio - vehiculo.Kilometraje;
-
     if (diferencia < 0) {
-      alerta = (
-        <div className="alert alert-danger">
-          ¡El servicio de motor está vencido por {Math.abs(diferencia)} km!
-        </div>
-      );
+      alerta = <div className="alert alert-danger">¡El servicio de motor está vencido por {Math.abs(diferencia)} km!</div>;
     } else if (diferencia < 1000) {
-      alerta = (
-        <div className="alert alert-warning">
-          Faltan {diferencia} km para el próximo servicio de motor.
-        </div>
-      );
+      alerta = <div className="alert alert-warning">Faltan {diferencia} km para el próximo servicio de motor.</div>;
     } else {
-      alerta = (
-        <div className="alert alert-success">
-          Faltan {diferencia} km para el próximo servicio de motor.
-        </div>
-      );
+      alerta = <div className="alert alert-success">Faltan {diferencia} km para el próximo servicio de motor.</div>;
     }
   }
 
@@ -108,7 +92,6 @@ export default function DetalleVehiculo() {
               </div>
             ))}
 
-            {/* Tarjeta de circulación con título y color */}
             <div className="col-md-3 mb-3">
               <label className="form-label">Impresión Tarjeta Circulación</label>
               <input
@@ -124,7 +107,6 @@ export default function DetalleVehiculo() {
               />
             </div>
 
-            {/* Estado del impuesto */}
             <div className="col-md-3 mb-3">
               <label className="form-label">Impuesto Año Actual</label>
               <input

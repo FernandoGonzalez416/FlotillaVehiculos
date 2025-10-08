@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function DesasignarVehiculo() {
   const [asignaciones, setAsignaciones] = useState([]);
 
   const obtenerAsignaciones = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/asignacion/asignados");
-      const data = await res.json();
+      const { data } = await api.get("/api/asignacion/asignados");
       setAsignaciones(data);
     } catch (error) {
-      console.error("Error al cargar asignaciones:", error);
       Swal.fire("Error", "No se pudo cargar la información", "error");
     }
   };
@@ -30,21 +29,14 @@ export default function DesasignarVehiculo() {
       cancelButtonText: "Cancelar"
     });
 
-    if (confirmacion.isConfirmed) {
-      try {
-        const res = await fetch(`http://localhost:3001/api/asignacion/${asignacion.ID_Asignacion}`, {
-          method: "DELETE"
-        });
+    if (!confirmacion.isConfirmed) return;
 
-        if (res.ok) {
-          Swal.fire("Desasignado", "El vehículo fue liberado correctamente", "success");
-          obtenerAsignaciones();
-        } else {
-          Swal.fire("Error", "No se pudo desasignar el vehículo", "error");
-        }
-      } catch (error) {
-        Swal.fire("Error", "Error al intentar desasignar", "error");
-      }
+    try {
+      await api.delete(`/api/asignacion/${asignacion.ID_Asignacion}`);
+      Swal.fire("Desasignado", "El vehículo fue liberado correctamente", "success");
+      obtenerAsignaciones();
+    } catch (error) {
+      Swal.fire("Error", "No se pudo desasignar el vehículo", "error");
     }
   };
 
@@ -52,7 +44,6 @@ export default function DesasignarVehiculo() {
     <SidebarLayout>
       <div className="container">
         <h2 className="mb-4">Desasignar Vehículo</h2>
-
         <table className="table table-hover">
           <thead className="table-dark">
             <tr>

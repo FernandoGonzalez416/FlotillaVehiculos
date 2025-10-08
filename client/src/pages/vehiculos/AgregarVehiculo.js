@@ -1,7 +1,8 @@
 import { useState } from "react";
 import SidebarLayout from "../../layouts/SidebarLayout";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 export default function AgregarVehiculo() {
   const navigate = useNavigate();
@@ -30,43 +31,29 @@ export default function AgregarVehiculo() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await fetch("http://localhost:3001/api/vehiculos/agregar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
+      await api.post("/api/vehiculos/agregar", formData);
+      Swal.fire("Vehículo agregado", "El registro fue exitoso", "success");
+      setFormData({
+        placa: "",
+        tipos: "",
+        marca: "",
+        modelo: "",
+        linea: "",
+        chasis: "",
+        color: "",
+        asientos: "",
+        motor: "",
+        combustible: "",
+        transmision: "",
+        impuesto_circulacion_anual: "",
+        impuesto_anio_actual: "",
+        kilometraje: "",
+        impresion_tarjeta_circulacion: ""
       });
-
-      if (res.ok) {
-        Swal.fire("Vehículo agregado", "El registro fue exitoso", "success");
-        setFormData({
-          placa: "",
-          tipos: "",
-          marca: "",
-          modelo: "",
-          linea: "",
-          chasis: "",
-          color: "",
-          asientos: "",
-          motor: "",
-          combustible: "",
-          transmision: "",
-          impuesto_circulacion_anual: "",
-          impuesto_anio_actual: "",
-          poliza_seguro: "",
-          kilometraje: "",
-          impresion_tarjeta_circulacion: ""
-        });
-        navigate("/vehiculos/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo registrar el vehículo", "error");
-      }
+      navigate("/vehiculos/consultar");
     } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "Hubo un problema de red", "error");
+      Swal.fire("Error", "No se pudo registrar el vehículo", "error");
     }
   };
 
@@ -81,30 +68,23 @@ export default function AgregarVehiculo() {
               <input type="text" className="form-control" name="placa" value={formData.placa} onChange={handleChange} required />
             </div>
             <div className="col-md-3 mb-3">
-                <label className="form-label">Tipo *</label>
-                <select
-                    className="form-select"
-                    name="tipos"
-                    value={formData.tipos}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="">Seleccione tipo</option>
-                    <option value="Camion">Camion</option>
-                    <option value="Panel">Panel</option>
-                    <option value="Pickup">Pickup</option>
-                    <option value="Sedan">Sedan</option>
-                    <option value="Motocicleta">Motocicleta</option>
-                </select>
+              <label className="form-label">Tipo *</label>
+              <select className="form-select" name="tipos" value={formData.tipos} onChange={handleChange} required>
+                <option value="">Seleccione tipo</option>
+                <option value="Camion">Camion</option>
+                <option value="Panel">Panel</option>
+                <option value="Pickup">Pickup</option>
+                <option value="Sedan">Sedan</option>
+                <option value="Motocicleta">Motocicleta</option>
+              </select>
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Marca *</label>
               <input type="text" className="form-control" name="marca" value={formData.marca} onChange={handleChange} required />
             </div>
             <div className="col-md-3 mb-3">
               <label className="form-label">Línea *</label>
-              <input type="text" className="form-control" name="linea" value={formData.linea} onChange={handleChange} required/>
+              <input type="text" className="form-control" name="linea" value={formData.linea} onChange={handleChange} required />
             </div>
             <div className="col-md-3 mb-3">
               <label className="form-label">Modelo *</label>
@@ -127,51 +107,33 @@ export default function AgregarVehiculo() {
               <input type="text" className="form-control" name="motor" value={formData.motor} onChange={handleChange} required />
             </div>
             <div className="col-md-4 mb-3">
-                <label className="form-label">Combustible</label>
-                <select
-                    className="form-select"
-                    name="combustible"
-                    value={formData.combustible}
-                    onChange={handleChange}
-                >
-                    <option value="">Seleccione tipo</option>
-                    <option value="Gasolina">Gasolina</option>
-                    <option value="Diesel">Diesel</option>
-                </select>
+              <label className="form-label">Combustible</label>
+              <select className="form-select" name="combustible" value={formData.combustible} onChange={handleChange}>
+                <option value="">Seleccione tipo</option>
+                <option value="Gasolina">Gasolina</option>
+                <option value="Diesel">Diesel</option>
+              </select>
             </div>
-
             <div className="col-md-4 mb-3">
-                <label className="form-label">Transmisión</label>
-                <select
-                    className="form-select"
-                    name="transmision"
-                    value={formData.transmision}
-                    onChange={handleChange}
-                >
-                    <option value="">Seleccione tipo</option>
-                    <option value="Automática">Automática</option>
-                    <option value="Manual">Manual</option>
-                </select>
+              <label className="form-label">Transmisión</label>
+              <select className="form-select" name="transmision" value={formData.transmision} onChange={handleChange}>
+                <option value="">Seleccione tipo</option>
+                <option value="Automática">Automática</option>
+                <option value="Manual">Manual</option>
+              </select>
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Impuesto Anual *</label>
-              <input type="number" step="0.01" className="form-control" name="impuesto_circulacion_anual" value={formData.impuesto_circulacion_anual} onChange={handleChange} required/>
+              <input type="number" step="0.01" className="form-control" name="impuesto_circulacion_anual" value={formData.impuesto_circulacion_anual} onChange={handleChange} required />
             </div>
             <div className="col-md-3 mb-3">
-                <label className="form-label">Impuesto Año Actual *</label>
-                <select
-                    className="form-select"
-                    name="impuesto_anio_actual"
-                    value={formData.impuesto_anio_actual}
-                    onChange={handleChange} required
-                >
-                    <option value="">Seleccione estado</option>
-                    <option value="Pagado">Pagado</option>
-                    <option value="Pendiente">Pendiente</option>
-                </select>
+              <label className="form-label">Impuesto Año Actual *</label>
+              <select className="form-select" name="impuesto_anio_actual" value={formData.impuesto_anio_actual} onChange={handleChange} required>
+                <option value="">Seleccione estado</option>
+                <option value="Pagado">Pagado</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
             </div>
-
             <div className="col-md-3 mb-3">
               <label className="form-label">Kilometraje *</label>
               <input type="number" className="form-control" name="kilometraje" value={formData.kilometraje} onChange={handleChange} required />
@@ -181,9 +143,7 @@ export default function AgregarVehiculo() {
               <input type="date" className="form-control" name="impresion_tarjeta_circulacion" value={formData.impresion_tarjeta_circulacion} onChange={handleChange} required />
             </div>
           </div>
-          <button type="submit" className="btn btn-primary">
-            Guardar Vehículo
-          </button>
+          <button type="submit" className="btn btn-primary">Guardar Vehículo</button>
         </form>
       </div>
     </SidebarLayout>

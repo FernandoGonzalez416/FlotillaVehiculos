@@ -3,7 +3,7 @@ import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
-
+import api from "../../services/api";
 
 export default function AgregarMantenimiento() {
   const navigate = useNavigate();
@@ -21,127 +21,90 @@ export default function AgregarMantenimiento() {
     frecuencia_servicio: "",
     kilometraje_proximo_servicio: ""
   });
-  
 
   // Obtener vehículos y talleres
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resVehiculos = await fetch("http://localhost:3001/api/vehiculos/activos");
-        const resTalleres = await fetch("http://localhost:3001/api/talleres");
-
-        const vehiculosData = await resVehiculos.json();
-        const talleresData = await resTalleres.json();
-
-        setVehiculos(vehiculosData);
-        setTalleres(talleresData);
+        const [vehiculosRes, talleresRes] = await Promise.all([
+          api.get("/api/vehiculos/activos"),
+          api.get("/api/talleres"),
+        ]);
+        setVehiculos(vehiculosRes.data);
+        setTalleres(talleresRes.data);
       } catch (error) {
         console.error("Error al cargar datos:", error);
         Swal.fire("Error", "No se pudieron cargar los datos", "error");
       }
     };
-
     fetchData();
   }, []);
 
+  // Recalcular servicio de motor
   useEffect(() => {
-    // Cuando se cambie el tipo de mantenimiento
     if (formData.tipo_mantenimiento === "Servicio de Motor") {
       const frecuencia = 7000;
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         frecuencia_servicio: frecuencia,
         kilometraje_proximo_servicio:
           parseInt(prev.kilometraje || 0) + frecuencia
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         frecuencia_servicio: "",
         kilometraje_proximo_servicio: ""
       }));
     }
   }, [formData.tipo_mantenimiento, formData.kilometraje]);
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-  
     setFormData((prev) => {
-      let updatedForm = {
-        ...prev,
-        [name]: value
-      };
-  
-      // Si se actualizó tipo de mantenimiento
+      let updated = { ...prev, [name]: value };
       if (name === "tipo_mantenimiento" && value === "Servicio de Motor") {
-        updatedForm.frecuencia_servicio = 7000;
+        updated.frecuencia_servicio = 7000;
       }
-  
-      // Si se cambia el tipo y no es Servicio de Motor
       if (name === "tipo_mantenimiento" && value !== "Servicio de Motor") {
-        updatedForm.frecuencia_servicio = "";
+        updated.frecuencia_servicio = "";
       }
-  
-      // Recalcular el próximo servicio si hay kilometraje y frecuencia
-      const km = parseInt(updatedForm.kilometraje);
-      const frecuencia = parseInt(updatedForm.frecuencia_servicio);
-  
-      if (!isNaN(km) && !isNaN(frecuencia)) {
-        updatedForm.kilometraje_proximo_servicio = km + frecuencia;
-      } else {
-        updatedForm.kilometraje_proximo_servicio = "";
-      }
-  
-      return updatedForm;
+      const km = parseInt(updated.kilometraje);
+      const freq = parseInt(updated.frecuencia_servicio);
+      updated.kilometraje_proximo_servicio =
+        !isNaN(km) && !isNaN(freq) ? km + freq : "";
+      return updated;
     });
   };
-  
 
-  const vehiculoOptions = vehiculos.map(v => ({
+  const vehiculoOptions = vehiculos.map((v) => ({
     value: v.ID_Vehiculo,
-    label: `${v.Placa} - ${v.Marca} ${v.Linea} ${v.Modelo}`
+    label: `${v.Placa} - ${v.Marca} ${v.Linea} ${v.Modelo}`,
   }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
     try {
-      const response = await fetch("http://localhost:3001/api/mantenimientos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      await api.post("/api/mantenimientos", formData);
+      Swal.fire("Mantenimiento registrado", "El registro fue exitoso", "success");
+      setFormData({
+        id_vehiculo: "",
+        tipo_mantenimiento: "",
+        fecha: "",
+        kilometraje: "",
+        titulo_mantenimiento: "",
+        descripcion: "",
+        id_taller: "",
+        costo: "",
+        frecuencia_servicio: "",
+        kilometraje_proximo_servicio: ""
       });
-  
-      if (response.ok) {
-        Swal.fire("Mantenimiento registrado", "El registro fue exitoso", "success");
-        setFormData({
-          id_vehiculo: "",
-          tipo_mantenimiento: "",
-          fecha: "",
-          kilometraje: "",
-          titulo_mantenimiento: "",
-          descripcion: "",
-          id_taller: "",
-          costo: "",
-          frecuencia_servicio: "",
-          kilometraje_proximo_servicio: ""
-        });
-        navigate("/mantenimientos/consultar");
-      } else {
-        const errorData = await response.json();
-        Swal.fire("Error", errorData.error || "No se pudo registrar el mantenimiento", "error");
-      }
-  
+      navigate("/mantenimientos/consultar");
     } catch (error) {
-      console.error("Error:", error);
-      Swal.fire("Error", "Hubo un problema al guardar el mantenimiento", "error");
+      const msg = error?.response?.data?.error || "No se pudo registrar el mantenimiento";
+      Swal.fire("Error", msg, "error");
     }
   };
-  
-  
 
   return (
     <SidebarLayout>
@@ -149,21 +112,19 @@ export default function AgregarMantenimiento() {
         <h2 className="mb-4">Agregar Mantenimiento</h2>
         <form onSubmit={handleSubmit}>
           <div className="row">
-
             {/* Vehículo */}
             <div className="col-md-12 mb-3">
               <label className="form-label">Vehículo *</label>
               <Select
                 options={vehiculoOptions}
                 value={vehiculoOptions.find(opt => opt.value === parseInt(formData.id_vehiculo))}
-                onChange={selected => {
-                  setFormData(prev => ({ ...prev, id_vehiculo: selected.value }));
-                }}
+                onChange={(selected) =>
+                  setFormData((prev) => ({ ...prev, id_vehiculo: selected.value }))
+                }
                 placeholder="Seleccione un vehículo..."
                 isSearchable
               />
             </div>
-
 
             {/* Tipo */}
             <div className="col-md-6 mb-3">
@@ -196,8 +157,7 @@ export default function AgregarMantenimiento() {
               />
             </div>
 
-           
-            {/* Titulo */}
+            {/* Título */}
             <div className="col-12 mb-3">
               <label className="form-label">Título del Mantenimiento *</label>
               <input
@@ -222,8 +182,8 @@ export default function AgregarMantenimiento() {
               />
             </div>
 
-             {/* Kilometraje actual */}
-             <div className="col-md-3 mb-3">
+            {/* Kilometraje */}
+            <div className="col-md-3 mb-3">
               <label className="form-label">Kilometraje *</label>
               <input
                 type="number"
@@ -235,7 +195,7 @@ export default function AgregarMantenimiento() {
               />
             </div>
 
-            {/* Frecuencia servicio */}
+            {/* Frecuencia */}
             <div className="col-md-3 mb-3">
               <label className="form-label">Frecuencia de Servicio (km) *</label>
               <input
@@ -249,7 +209,7 @@ export default function AgregarMantenimiento() {
               />
             </div>
 
-            {/* Kilometraje próximo servicio */}
+            {/* Próximo servicio */}
             <div className="col-md-3 mb-3">
               <label className="form-label">Próximo Servicio (km)</label>
               <input
@@ -273,7 +233,6 @@ export default function AgregarMantenimiento() {
               />
             </div>
 
-
             {/* Taller */}
             <div className="col-md-12 mb-4">
               <label className="form-label">Taller</label>
@@ -284,7 +243,7 @@ export default function AgregarMantenimiento() {
                 onChange={handleChange}
               >
                 <option value="">Seleccione un taller</option>
-                {talleres.map(t => (
+                {talleres.map((t) => (
                   <option key={t.ID_Taller} value={t.ID_Taller}>
                     {t.Nombre_Taller}
                   </option>
@@ -293,7 +252,9 @@ export default function AgregarMantenimiento() {
             </div>
 
             <div className="col-12">
-              <button type="submit" className="btn btn-primary">Guardar Mantenimiento</button>
+              <button type="submit" className="btn btn-primary">
+                Guardar Mantenimiento
+              </button>
             </div>
           </div>
         </form>

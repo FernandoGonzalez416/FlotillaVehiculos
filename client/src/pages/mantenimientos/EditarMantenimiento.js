@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import Swal from "sweetalert2";
 import Select from "react-select";
+import api from "../../services/api";
 
 export default function EditarMantenimiento() {
   const { id } = useParams();
@@ -24,17 +25,14 @@ export default function EditarMantenimiento() {
     const fetchData = async () => {
       try {
         const [resMant, resVehiculos, resTalleres] = await Promise.all([
-          fetch(`http://localhost:3001/api/mantenimientos/${id}`),
-          fetch("http://localhost:3001/api/vehiculos/activos"),
-          fetch("http://localhost:3001/api/talleres")
+          api.get(`/api/mantenimientos/${id}`),
+          api.get("/api/vehiculos/activos"),
+          api.get("/api/talleres")
         ]);
 
-        const mantenimiento = await resMant.json();
-        const vehiculosData = await resVehiculos.json();
-        const talleresData = await resTalleres.json();
-
-        setVehiculos(vehiculosData);
-        setTalleres(talleresData);
+        const mantenimiento = resMant.data;
+        setVehiculos(resVehiculos.data);
+        setTalleres(resTalleres.data);
 
         setFormData({
           id_vehiculo: String(mantenimiento.ID_Vehiculo),
@@ -63,21 +61,11 @@ export default function EditarMantenimiento() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:3001/api/mantenimientos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        Swal.fire("Éxito", "Mantenimiento actualizado correctamente", "success");
-        navigate("/mantenimientos/consultar");
-      } else {
-        Swal.fire("Error", "No se pudo actualizar el mantenimiento", "error");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      Swal.fire("Error", "Error de red", "error");
+      await api.put(`/api/mantenimientos/${id}`, formData);
+      Swal.fire("Éxito", "Mantenimiento actualizado correctamente", "success");
+      navigate("/mantenimientos/consultar");
+    } catch {
+      Swal.fire("Error", "No se pudo actualizar el mantenimiento", "error");
     }
   };
 
@@ -110,7 +98,7 @@ export default function EditarMantenimiento() {
               />
             </div>
 
-            {/* Tipo de mantenimiento */}
+            {/* Tipo */}
             <div className="col-md-6 mb-3">
               <label className="form-label">Tipo de Mantenimiento *</label>
               <select
